@@ -1,6 +1,9 @@
 package am.royalbank.uberbear.domain.dao
 
+import am.royalbank.uberbear.domain.entities.MoneyAmount
 import am.royalbank.uberbear.domain.entities.TransactionType
+import am.royalbank.uberbear.domain.entities.accounts.AccountWithBalances
+import am.royalbank.uberbear.frameworks.sql.getUUID
 import am.royalbank.uberbear.frameworks.sql.sqlQuery
 import am.royalbank.uberbear.frameworks.sql.sqlUpdate
 import java.math.BigDecimal
@@ -18,56 +21,89 @@ class AccountDao(
             accountId
         ) == 1
 
+    fun createStatement(accountId: UUID, statementId: UUID, currency: String, openingBalance: BigDecimal): Boolean =
+        connection.sqlUpdate("""
+            insert into AccountOpenStatement(
+                accountOpenStatementId,
+                accountId,
+                currency,
+                openingBalance)
+            values (?, ?, ?::Currency, ?)
+            """,
+            statementId,
+            accountId,
+            currency,
+            openingBalance
+        ) == 1
+
     fun createTransaction(
         accountId: UUID,
         transactionId: UUID,
-        currency: String,
-        amount: BigDecimal,
         transactionType: TransactionType,
+        amount: MoneyAmount,
         description: String?
     ): Boolean =
         connection.sqlUpdate("""
             insert into AccountTransaction(
                 accountId,
                 accountTransactionId,
+                transactionType,
                 currency,
                 amount,
-                transactionType,
                 description)
-            values (?, ?, ?::Currency, ?, ?::AccountTransactionType, ?)
+            values (?, ?, ?::AccountTransactionType, ?::Currency, ?, ?)
             """,
             accountId,
             transactionId,
-            currency,
-            amount,
             transactionType.dbName,
+            amount.currency,
+            amount.value,
             description
         ) == 1
 
-    fun getAccountBalance(accountId: UUID, currency: String): BigDecimal? =
+    fun getAccountWithBalances(accountId: UUID): AccountWithBalances? =
         connection.sqlQuery("""
-            with Params(accountId, currency) as (values (?, ?::Currency)),
-                Statement(balance, openedAt) as (
-                    select openingBalance, openedAt
+            with
+                Param(accountId) as (
+                    values(?)
+                ),
+                -- NOTE: we allow to have AccountTransaction independent of having an AccountOpenStatement
+                CurrentTransactionTotal as (
+                    select
+                        accountId,
+                        currency,
+                        sum(case
+                            when transactionType = 'debit' then amount
+                            else -amount
+                            end) as total
+                    from AccountTransaction
+                    -- filter out transactions that are closed
+                    where not exists (
+                        select 1 from AccountOpenStatement as stm
+                        where stm.accountId = accountId and stm.currency = currency and openedAt > createdAt)
+                    group by accountId, currency
+                ),
+                Result as (
+                    select accountId, currency, coalesce(openingBalance, 0.0) + coalesce(total, 0.0) as balance
                     from AccountOpenStatement
-                    natural inner join Params
-                    order by openedAt desc
-                    limit 1)
-            select (
-                (select coalesce((select balance from Statement), 0.0)) +
-                (select coalesce(sum(case when transactionType = 'debit' then amount else -amount end), 0.0)
-                from AccountTransaction
-                natural inner join Params
-                where not exists (select 1 from Statement where openedAt > createdAt))
-            ) as total
+                    full join CurrentTransactionTotal using (accountId, currency)
+                )
+            
+            select * from Param inner join Result using (accountId)
             """,
-            accountId,
-            currency
+            accountId
         ) { resultSet ->
-            if (resultSet.next()) {
-                resultSet.getBigDecimal("total")
-            } else {
+            val balances = ArrayList<MoneyAmount>()
+            while (resultSet.next()) {
+                check(accountId == resultSet.getUUID("accountId")) { "accountId mismatch" }
+                balances.add(MoneyAmount(resultSet.getString("currency"), resultSet.getBigDecimal("balance")))
+            }
+
+            // TODO: for existing account, without any statements and transactions return an empty balances instead
+            if (balances.isEmpty()) {
                 null
+            } else {
+                AccountWithBalances(accountId, balances)
             }
         }
 }
