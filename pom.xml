@@ -28,7 +28,7 @@
 
         <!-- Tests -->
         <junit.version>5.5.1</junit.version>
-        <assertj.version>3.11.1</assertj.version>
+        <hamkrest.version>1.7.0.0</hamkrest.version>
         <testcontainers.version>1.11.3</testcontainers.version>
     </properties>
 
@@ -107,9 +107,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj.version}</version>
+            <groupId>com.natpryce</groupId>
+            <artifactId>hamkrest</artifactId>
+            <version>${hamkrest.version}</version>
             <scope>test</scope>
         </dependency>
 

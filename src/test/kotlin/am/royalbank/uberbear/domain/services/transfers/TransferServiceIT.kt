@@ -1,10 +1,12 @@
 package am.royalbank.uberbear.domain.services.transfers
 
-import am.royalbank.uberbear.domain.entities.MoneyAmount
+import am.royalbank.uberbear.domain.entities.EUR
+import am.royalbank.uberbear.domain.matchers.AccountMatchers
 import am.royalbank.uberbear.domain.services.accounts.AccountService
 import am.royalbank.uberbear.frameworks.sql.Db
 import am.royalbank.uberbear.frameworks.testcontainers.KPostgreSQLContainer
-import java.math.BigDecimal
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.present
 import java.sql.SQLException
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -31,7 +33,7 @@ internal class TransferServiceIT {
             service.makeTransfer(
                 sourceAccountId,
                 targetAccountId,
-                MoneyAmount("EUR", BigDecimal("12.34")),
+                12_34.EUR,
                 "test transfer"
             )
         }
@@ -41,37 +43,43 @@ internal class TransferServiceIT {
         val sourceAccountId = accountService.createAccount("EUR")
         val targetAccountId = UUID.randomUUID()
 
-        check(accountService.getAccountWithBalances(sourceAccountId)!!.balances[0].value.signum() == 0) { "initial balance is 0" }
+        assertThat(accountService.getAccountWithBalances(sourceAccountId),
+            present(AccountMatchers.accountWithBalance(sourceAccountId, 0.EUR)))
 
         assertThrows(SQLException::class.java) {
             service.makeTransfer(
                 sourceAccountId,
                 targetAccountId,
-                MoneyAmount("EUR", BigDecimal("12.34")),
+                12_34.EUR,
                 "test transfer"
             )
         }
 
-        check(accountService.getAccountWithBalances(sourceAccountId)!!.balances[0].value.signum() == 0) { "balance is unchanged" }
+        assertThat(accountService.getAccountWithBalances(sourceAccountId),
+            present(AccountMatchers.accountWithBalance(sourceAccountId, 0.EUR)))
     }
 
     @Test fun `transfer from one account to another`() {
         val sourceAccountId = accountService.createAccount("EUR")
         val targetAccountId = accountService.createAccount("EUR")
 
-        val account1 = accountService.getAccountWithBalances(sourceAccountId)
-        check(account1!!.balances[0].value.signum() == 0) { "initial balance is 0" }
-        val account2 = accountService.getAccountWithBalances(targetAccountId)
-        check(account2!!.balances[0].value.signum() == 0) { "initial balance is 0" }
+        assertThat(accountService.getAccountWithBalances(sourceAccountId),
+            present(AccountMatchers.accountWithBalance(sourceAccountId, 0.EUR)))
+
+        assertThat(accountService.getAccountWithBalances(targetAccountId),
+            present(AccountMatchers.accountWithBalance(targetAccountId, 0.EUR)))
 
         service.makeTransfer(
             sourceAccountId,
             targetAccountId,
-            MoneyAmount("EUR", BigDecimal("12.34")),
+            12_34.EUR,
             "test transfer"
         )
 
-        check(accountService.getAccountWithBalances(sourceAccountId)!!.balances[0].value.signum() < 0) { "balance is unchanged" }
-        check(accountService.getAccountWithBalances(targetAccountId)!!.balances[0].value.signum() > 0) { "balance is unchanged" }
+        assertThat(accountService.getAccountWithBalances(sourceAccountId),
+            present(AccountMatchers.accountWithBalance(sourceAccountId, (-12_34).EUR)))
+
+        assertThat(accountService.getAccountWithBalances(targetAccountId),
+            present(AccountMatchers.accountWithBalance(targetAccountId, 12_34.EUR)))
     }
 }
