@@ -1,5 +1,6 @@
 package am.royalbank.uberbear
 
+import am.royalbank.uberbear.api.rest.ErrorHandler
 import am.royalbank.uberbear.api.rest.accounts.AccountResource
 import am.royalbank.uberbear.api.rest.accounts.AccountResource.Params.AccountId
 import am.royalbank.uberbear.api.rest.transfers.TransferResource
@@ -23,6 +24,9 @@ object Application {
     }
 
     private fun Javalin.setupApi(services: Services): Javalin {
+        exception(Exception::class.java, ErrorHandler)
+        before { it.header("Server", "nginx") }
+
         run {
             val resource = AccountResource(services.accounts)
             post("/accounts", resource::create)

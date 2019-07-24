@@ -9,8 +9,23 @@ class Db(
     private val dataSource: DataSource
 ) {
 
-    fun <R> makeConnection(block: (Connection) -> R): R =
-        dataSource.connection.use { return block(it) }
+    fun <R> connect(autoCommit: Boolean = true, block: (Connection) -> R): R =
+        dataSource.connection.use {
+            if (autoCommit) {
+                return block(it)
+            }
+            val oldAutoCommit = it.autoCommit
+            try {
+                it.autoCommit = false
+                val result = block(it)
+                it.commit()
+                return result
+            } catch (ex: Throwable) {
+                it.rollback()
+                it.autoCommit = oldAutoCommit
+                throw ex
+            }
+        }
 
     companion object {
         private val logger = LoggerFactory.getLogger(Db::class.java)

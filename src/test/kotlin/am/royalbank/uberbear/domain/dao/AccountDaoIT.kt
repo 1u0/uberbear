@@ -25,7 +25,7 @@ internal class AccountDaoIT {
     private val db = Db.init(dbContainer.jdbcUrl, dbContainer.username, dbContainer.password)
 
     @Test fun `get account balance returns null for not existing account`() {
-        db.makeConnection { connection ->
+        db.connect { connection ->
             val accountDao = AccountDao(connection)
             val accountId = UUID.randomUUID()
 
@@ -34,7 +34,7 @@ internal class AccountDaoIT {
     }
 
     @Test fun `get account balance returns null for existing account without open statements and open transactions`() {
-        db.makeConnection { connection ->
+        db.connect { connection ->
             val accountDao = AccountDao(connection)
             val accountId = UUID.randomUUID()
             check(accountDao.createAccount(accountId)) { "create account" }
@@ -44,7 +44,7 @@ internal class AccountDaoIT {
     }
 
     @Test fun `get account balance with statement and transactions`() {
-        db.makeConnection { connection ->
+        db.connect { connection ->
             val accountDao = AccountDao(connection)
             val accountId = UUID.randomUUID()
             check(accountDao.createAccount(accountId)) { "create account" }

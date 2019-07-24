@@ -14,8 +14,7 @@ class TransferService(
         // TODO: make proper distributed transfer, assuming that accounts may be on different services.
 
         require(amount.value.signum() > 0) { "transferred amount must be positive" }
-        db.makeConnection { connection ->
-            connection.autoCommit = false
+        db.connect(autoCommit = false) { connection ->
             val dao = AccountDao(connection)
 
             if (!dao.createTransaction(
@@ -24,7 +23,6 @@ class TransferService(
                 TransactionType.Credit,
                 amount,
                 description)) {
-                connection.rollback()
                 throw IllegalStateException("couldn't withdraw from source account")
             }
             if (!dao.createTransaction(
@@ -33,10 +31,8 @@ class TransferService(
                     TransactionType.Debit,
                     amount,
                     description)) {
-                connection.rollback()
                 throw IllegalStateException("couldn't deposit to target account")
             }
-            connection.commit()
         }
     }
 }
