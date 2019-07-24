@@ -28,7 +28,7 @@ class AccountDao(
                 accountId,
                 currency,
                 openingBalance)
-            values (?, ?, ?::Currency, ?)
+            values (?, ?, ?, ?)
             """,
             statementId,
             accountId,
@@ -52,7 +52,7 @@ class AccountDao(
                 currency,
                 amount,
                 description)
-            values (?, ?, ?::AccountTransactionType, ?::Currency, ?, ?)
+            values (?, ?, ?, ?, ?, ?)
             """,
             accountId,
             transactionId,
@@ -66,7 +66,7 @@ class AccountDao(
         connection.sqlQuery("""
             with
                 Param(accountId) as (
-                    values(?)
+                    values(cast(? as uuid))
                 ),
                 -- NOTE: we allow to have AccountTransaction independent of having an AccountOpenStatement
                 CurrentTransactionTotal as (

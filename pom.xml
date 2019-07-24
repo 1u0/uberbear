@@ -17,10 +17,13 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 
         <slf4j.version>1.7.26</slf4j.version>
+        <javalin.version>3.1.0</javalin.version>
+        <jackson.version>2.9.9</jackson.version>
 
         <!-- DB -->
         <hikaricp.version>3.3.1</hikaricp.version>
         <flyway.version>5.2.4</flyway.version>
+        <hsqldb.version>2.5.0</hsqldb.version>
         <postgresql.version>42.2.6</postgresql.version>
 
         <!-- Tests -->
@@ -48,6 +51,27 @@
         </dependency>
 
         <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin</artifactId>
+            <version>${javalin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
@@ -56,6 +80,12 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
             <version>${flyway.version}</version>
+        </dependency>
+        <!-- Note: doesn't support enum types -->
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>${hsqldb.version}</version>
         </dependency>
 
         <dependency>
@@ -243,7 +273,6 @@
                         <artifactId>ktlint</artifactId>
                         <version>0.34.0</version>
                     </dependency>
-                    <!-- additional 3rd party ruleset(s) can be specified here -->
                 </dependencies>
             </plugin>
         </plugins>

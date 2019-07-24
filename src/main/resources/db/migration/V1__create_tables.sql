@@ -1,11 +1,19 @@
 /* Common tables */
 
 -- ISO 4217 code
-CREATE TYPE
-Currency AS enum(
-    'EUR',
-    'GBP'
+--CREATE TYPE
+--Currency AS enum(
+--    'EUR',
+--    'GBP'
+--);
+CREATE TABLE IF NOT EXISTS
+Currency(
+    code varchar(5) NOT NULL PRIMARY KEY
 );
+INSERT INTO Currency VALUES
+    ('EUR'),
+    ('GBP')
+;
 
 -------
 
@@ -24,7 +32,8 @@ CREATE TABLE IF NOT EXISTS
 AccountOpenStatement(
     accountOpenStatementId uuid NOT NULL PRIMARY KEY,
     accountId uuid NOT NULL REFERENCES Account(accountId),
-    currency Currency NOT NULL,
+--    currency Currency NOT NULL,
+    currency varchar(5) NOT NULL REFERENCES Currency(code),
     openedAt timestamp with time zone DEFAULT now() NOT NULL,
     openingBalance decimal(18, 4) NOT NULL
 );
@@ -38,7 +47,8 @@ CREATE TABLE IF NOT EXISTS
 AccountStatement(
     accountStatementId uuid NOT NULL PRIMARY KEY,
     accountId uuid NOT NULL REFERENCES Account(accountId),
-    currency Currency NOT NULL,
+--    currency Currency NOT NULL,
+    currency varchar(5) NOT NULL REFERENCES Currency(code),
     openedAt timestamp with time zone NOT NULL,
     openingBalance decimal(18, 4) NOT NULL,
     closedAt timestamp with time zone DEFAULT now() NOT NULL,
@@ -53,20 +63,30 @@ ALTER TABLE AccountStatement ADD
       CHECK (openedAt < closedAt);
 
 
-CREATE TYPE
-AccountTransactionType AS enum(
-    'debit',
-    'credit'
+--CREATE TYPE
+--AccountTransactionType AS enum(
+--    'debit',
+--    'credit'
+--);
+CREATE TABLE IF NOT EXISTS
+AccountTransactionType(
+    code varchar(10) NOT NULL PRIMARY KEY
 );
+INSERT INTO AccountTransactionType VALUES
+    ('debit'),
+    ('credit')
+;
 
 CREATE TABLE IF NOT EXISTS
 AccountTransaction(
     accountTransactionId uuid NOT NULL PRIMARY KEY,
     accountId uuid NOT NULL REFERENCES Account(accountId),
-    currency Currency NOT NULL,
+--    currency Currency NOT NULL,
+    currency varchar(5) NOT NULL REFERENCES Currency(code),
     amount decimal(18, 4) NOT NULL,
     createdAt timestamp with time zone DEFAULT now() NOT NULL,
-    transactionType AccountTransactionType NOT NULL,
+--    transactionType AccountTransactionType NOT NULL,
+    transactionType varchar(10) NOT NULL REFERENCES AccountTransactionType(code),
     description varchar(100)
 );
 
