@@ -43,6 +43,7 @@ class AccountDao(
         amount: MoneyAmount,
         description: String?
     ): Boolean =
+        // TODO: restrict transaction creation to currencies that explicitly enabled at account level
         connection.sqlUpdate("""
             insert into AccountTransaction(
                 accountId,

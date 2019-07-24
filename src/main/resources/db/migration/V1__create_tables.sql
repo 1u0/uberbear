@@ -17,7 +17,7 @@ Account(
 );
 
 -- Current account statement (not closed).
--- An account can have not more than one (per currency) an open statement.
+-- An account can have at most one (per currency) an open statement. That statement is the latest one.
 -- After some time, an open account statement transitions to be closed with finalized closed balance,
 -- and a new open statement is created instead.
 CREATE TABLE IF NOT EXISTS
