@@ -1,6 +1,7 @@
 package am.royalbank.uberbear
 
 import am.royalbank.uberbear.api.rest.accounts.AccountResource
+import am.royalbank.uberbear.api.rest.accounts.AccountResource.Params.AccountId
 import am.royalbank.uberbear.api.rest.transfers.TransferResource
 import am.royalbank.uberbear.domain.services.Services
 import am.royalbank.uberbear.frameworks.jackson.ObjectMappers
@@ -11,7 +12,7 @@ import io.javalin.plugin.json.JavalinJackson
 object Application {
     @JvmStatic
     fun main(args: Array<String>) {
-        var jdbcUrl = "jdbc:hsqldb:mem:test;sql.syntax_pgs=true"
+        val jdbcUrl = "jdbc:hsqldb:mem:test;sql.syntax_pgs=true"
         val db = Db.init(jdbcUrl, "", "")
         val services = Services.create(db)
 
@@ -25,11 +26,11 @@ object Application {
         run {
             val resource = AccountResource(services.accounts)
             post("/accounts", resource::create)
-            get("/accounts/:${AccountResource.AccountId}/balances", resource::getAccountBalances)
+            get("/accounts/:$AccountId/balances", resource::getAccountBalances)
         }
         run {
             val resource = TransferResource(services.transfers)
-            post("/transfers", resource::makeTransfer)
+            post("/accounts/:$AccountId/transfers", resource::makeTransfer)
         }
         return this
     }
