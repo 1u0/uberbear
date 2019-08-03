@@ -3,15 +3,11 @@ package am.royalbank.uberbear.domain.services.transfers
 import am.royalbank.uberbear.domain.entities.EUR
 import am.royalbank.uberbear.domain.entities.MoneyAmount
 import am.royalbank.uberbear.domain.matchers.AccountMatchers
-import am.royalbank.uberbear.domain.matchers.MoneyMatchers
 import am.royalbank.uberbear.domain.services.accounts.AccountService
+import am.royalbank.uberbear.frameworks.hamkrest.equalByComparingTo
 import am.royalbank.uberbear.frameworks.sql.Db
 import am.royalbank.uberbear.utils.Threads
-import com.natpryce.hamkrest.allOf
-import com.natpryce.hamkrest.anyElement
 import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
-import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.present
 import java.math.BigDecimal
 import java.util.UUID
@@ -34,14 +30,20 @@ class ConcurrentTransfersIT {
                 present(AccountMatchers.accountWithBalance(accountId, 0.EUR)))
         }
 
-        val threads = Threads.runSimultaneously(count = 64) {
-            runWorker(accountIds, iterations = 1_000)
+        val allUpdates = Threads.runInParallel(parallelism = 64) {
+            makeRandomTransfers(accountIds, iterations = 1_000)
         }
-        Threads.awaitAll(threads)
 
-        assertThat(getTotalBalance(accountIds), allOf(
-            hasSize(equalTo(1)),
-            anyElement(MoneyMatchers.amountEquals(0.EUR))))
+        val updates = allUpdates.reduce { totalUpdates, updates ->
+            totalUpdates.zip(updates).map { it.first + it.second }
+        }
+
+        assertThat(updates.reduce { sum, value -> sum + value }, equalByComparingTo(BigDecimal.ZERO))
+
+        accountIds.forEachIndexed { i, accountId ->
+            assertThat(accountService.getAccountWithBalances(accountId),
+                present(AccountMatchers.accountWithBalance(accountId, MoneyAmount("EUR", updates[i]))))
+        }
     }
 
     private fun createAccounts(count: Int): List<UUID> =
@@ -49,10 +51,12 @@ class ConcurrentTransfersIT {
             .map { accountService.createAccount("EUR") }
             .toList()
 
-    private fun runWorker(accountIds: List<UUID>, iterations: Int) {
+    private fun makeRandomTransfers(accountIds: List<UUID>, iterations: Int): List<BigDecimal> {
         val threadId = Thread.currentThread().id
         val accountsCount = accountIds.size
         val random = ThreadLocalRandom.current()
+        val updates = (1..accountsCount).map { BigDecimal.ZERO }.toMutableList()
+
         (1..iterations).forEach {
             val source = random.nextInt(accountsCount)
             var target = random.nextInt(accountsCount - 1)
@@ -61,14 +65,10 @@ class ConcurrentTransfersIT {
             }
             val amount = random.nextInt(1, 500_00).EUR // zero amount is not allowed to transfer
             transferService.makeTransfer(accountIds[source], accountIds[target], amount, "$threadId:$it")
+            updates[source] -= amount.value
+            updates[target] += amount.value
         }
-    }
 
-    private fun getTotalBalance(accountIds: List<UUID>): List<MoneyAmount> =
-        accountIds.asSequence()
-            .map { accountService.getAccountWithBalances(it) }
-            .onEach(::println) // for debugging
-            .flatMap { it!!.balances.asSequence() }
-            .groupBy { it.currency }
-            .map { MoneyAmount(it.key, it.value.map(MoneyAmount::value).reduce(BigDecimal::add)) }
+        return updates
+    }
 }
