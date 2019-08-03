@@ -9,8 +9,8 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.present
 import java.sql.SQLException
 import java.util.UUID
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -29,7 +29,7 @@ internal class TransferServiceIT {
         val sourceAccountId = UUID.randomUUID()
         val targetAccountId = UUID.randomUUID()
 
-        assertThrows(SQLException::class.java) {
+        assertThrows<SQLException> {
             service.makeTransfer(
                 sourceAccountId,
                 targetAccountId,
@@ -46,7 +46,7 @@ internal class TransferServiceIT {
         assertThat(accountService.getAccountWithBalances(sourceAccountId),
             present(AccountMatchers.accountWithBalance(sourceAccountId, 0.EUR)))
 
-        assertThrows(SQLException::class.java) {
+        assertThrows<SQLException> {
             service.makeTransfer(
                 sourceAccountId,
                 targetAccountId,
