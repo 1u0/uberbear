@@ -54,10 +54,13 @@ class ConcurrentTransfersIT {
         val accountsCount = accountIds.size
         val random = ThreadLocalRandom.current()
         (1..iterations).forEach {
-            val sourceAccountId = accountIds[random.nextInt(accountsCount)]
-            val targetAccountId = accountIds[random.nextInt(accountsCount)]
+            val source = random.nextInt(accountsCount)
+            var target = random.nextInt(accountsCount - 1)
+            if (target >= source) {
+                target++
+            }
             val amount = random.nextInt(1, 500_00).EUR // zero amount is not allowed to transfer
-            transferService.makeTransfer(sourceAccountId, targetAccountId, amount, "$threadId:$it")
+            transferService.makeTransfer(accountIds[source], accountIds[target], amount, "$threadId:$it")
         }
     }
 

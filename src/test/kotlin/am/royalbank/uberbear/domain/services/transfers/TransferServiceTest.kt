@@ -20,7 +20,7 @@ internal class TransferServiceTest {
         val amount = random.nextInt(-500_00, 0).EUR
 
         assertThrows<IllegalArgumentException> {
-            service.makeTransfer(sourceAccountId, targetAccountId, amount, "counter transfer")
+            service.makeTransfer(sourceAccountId, targetAccountId, amount, "Counter transfer")
         }
     }
 
@@ -29,7 +29,15 @@ internal class TransferServiceTest {
         val targetAccountId = UUID.randomUUID()
 
         assertThrows<IllegalArgumentException> {
-            service.makeTransfer(sourceAccountId, targetAccountId, 0.EUR, "send messages for free")
+            service.makeTransfer(sourceAccountId, targetAccountId, 0.EUR, "Send messages for free!")
+        }
+    }
+
+    @Test fun `transferring to self is not allowed`() {
+        val sourceAccountId = UUID.randomUUID()
+
+        assertThrows<IllegalArgumentException> {
+            service.makeTransfer(sourceAccountId, sourceAccountId, 12_34.EUR, "No one writes to the Colonel")
         }
     }
 }

@@ -13,7 +13,9 @@ class TransferService(
         // For simplicity, transfers are supported only for the same database.
         // TODO: make proper distributed transfer, assuming that accounts may be on different services.
 
-        require(amount.value.signum() > 0) { "transferred amount must be positive" }
+        require(sourceAccountId != targetAccountId) { "transfer to one self" }
+        require(amount.value.signum() > 0) { "transfer amount must be positive" }
+
         db.connect(autoCommit = false) { connection ->
             val dao = AccountDao(connection)
 
